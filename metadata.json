@@ -1,0 +1,8 @@
+{
+  "name": "Faiza Hisab",
+  "description": "দোকানের হিসাব, পিওএস বিক্রি, বাকি খাতা ও স্টক ব্যবস্থাপনার নিরাপদ সিস্টেম।",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
