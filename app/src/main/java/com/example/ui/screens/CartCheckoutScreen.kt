@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Customer
@@ -233,12 +235,13 @@ fun CartCheckoutScreen(
                     Surface(
                         color = Slate900,
                         tonalElevation = 8.dp,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate800)
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
+                        modifier = Modifier.navigationBarsPadding()
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
                         ) {
                             Button(
                                 onClick = onCompleteSale,
@@ -258,13 +261,13 @@ fun CartCheckoutScreen(
                                         text = "বিক্রি সম্পন্ন করুন ✓",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White
+                                        color = Slate950
                                     )
                                     Text(
                                         text = "৳ ${"%,.0f".format(netTotal)}",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White
+                                        color = Slate950
                                     )
                                 }
                             }
@@ -454,7 +457,7 @@ fun CartCheckoutScreen(
                                     text = "বিক্রি সম্পন্ন করুন ✓ • ৳ ${"%,.0f".format(netTotal)}",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = Slate950
                                 )
                             }
                         }
@@ -960,14 +963,14 @@ fun SaleTypeCard(
                         Icon(
                             Icons.Default.Receipt,
                             contentDescription = null,
-                            tint = if (!isCash) Color.White else Slate400,
+                            tint = if (!isCash) Color(0xFF451A03) else Slate400,
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
                             text = "বাকি (খাতা)",
                             fontSize = 14.sp,
                             fontWeight = if (!isCash) FontWeight.Bold else FontWeight.Medium,
-                            color = if (!isCash) Color.White else Slate400
+                            color = if (!isCash) Color(0xFF451A03) else Slate400
                         )
                     }
                 }
@@ -1399,116 +1402,253 @@ fun CartItemRow(
         colors = CardDefaults.cardColors(containerColor = Slate900),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Slate800, RoundedCornerShape(12.dp))
+            .border(1.dp, Slate700, RoundedCornerShape(12.dp))
     ) {
-        Row(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Slate800),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Checkroom,
-                    contentDescription = item.product.name,
-                    tint = Slate400,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${item.product.name} (${item.variant})",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-                Text(
-                    text = "৳ ${"%,.0f".format(item.product.sellingPrice)} x ${item.quantity}",
-                    fontSize = 12.sp,
-                    color = Slate400,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
-            }
-
-            // Quantity Stepper [-] qty [+]
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(Slate800)
-                        .clickable(onClick = onDecrease),
-                    contentAlignment = Alignment.Center
+            val isNarrow = maxWidth < 460.dp
+            if (isNarrow) {
+                // Adaptive 2-row layout for mobile screens
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Remove,
-                        contentDescription = "Decrease",
-                        tint = TextPrimary,
-                        modifier = Modifier.size(16.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Slate800)
+                                .border(1.dp, Slate700, RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Checkroom,
+                                contentDescription = item.product.name,
+                                tint = EmeraldPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "${item.product.name}${if (item.variant.isNotBlank() && item.variant != "ডিফল্ট") " (${item.variant})" else ""}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "একক মূল্য: ৳ ${"%,.0f".format(item.product.sellingPrice)}",
+                                fontSize = 12.sp,
+                                color = Slate400
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = CoralPink,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = Slate800, thickness = 0.8.dp)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Quantity Stepper [-] qty [+]
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Slate800)
+                                    .border(1.dp, Slate700, CircleShape)
+                                    .clickable(onClick = onDecrease),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Remove,
+                                    contentDescription = "Decrease",
+                                    tint = TextPrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+
+                            Text(
+                                text = item.quantity.toString(),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(EmeraldPrimary)
+                                    .clickable(onClick = onIncrease),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Increase",
+                                    tint = Slate950,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        // Line Total
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "মোট:",
+                                fontSize = 12.sp,
+                                color = Slate400
+                            )
+                            Text(
+                                text = "৳ ${"%,.0f".format(lineTotal)}",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = EmeraldPrimary
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Wide / Tablet layout
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Slate800)
+                            .border(1.dp, Slate700, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Checkroom,
+                            contentDescription = item.product.name,
+                            tint = EmeraldPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "${item.product.name} (${item.variant})",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "৳ ${"%,.0f".format(item.product.sellingPrice)} x ${item.quantity}",
+                            fontSize = 12.sp,
+                            color = Slate400
+                        )
+                    }
+
+                    // Stepper
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Slate800)
+                                .border(1.dp, Slate700, CircleShape)
+                                .clickable(onClick = onDecrease),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Remove,
+                                contentDescription = "Decrease",
+                                tint = TextPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        Text(
+                            text = item.quantity.toString(),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp)
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(EmeraldPrimary)
+                                .clickable(onClick = onIncrease),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Increase",
+                                tint = Slate950,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = CoralPink,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Text(
+                        text = "৳ ${"%,.0f".format(lineTotal)}",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = EmeraldPrimary
                     )
                 }
-
-                Text(
-                    text = item.quantity.toString(),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    modifier = Modifier.padding(horizontal = 6.dp)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(EmeraldPrimary)
-                        .clickable(onClick = onIncrease),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Increase",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Delete Icon
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = CoralPink,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Line Total
-            Text(
-                text = "৳ ${"%,.0f".format(lineTotal)}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
         }
     }
 }

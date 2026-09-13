@@ -809,10 +809,10 @@ fun CosmeticsProductCard(
     val profit = (product.sellingPrice - product.purchasePrice).coerceAtLeast(0.0)
 
     val cardBorderColor = when {
-        expiryStatus == ExpiryStatus.EXPIRED -> CoralPink.copy(alpha = 0.5f)
-        stockStatus == ProductStockStatus.OUT_OF_STOCK -> CoralPink.copy(alpha = 0.4f)
-        stockStatus == ProductStockStatus.LOW_STOCK -> AmberOrange.copy(alpha = 0.4f)
-        else -> Slate800
+        expiryStatus == ExpiryStatus.EXPIRED -> CoralPink.copy(alpha = 0.6f)
+        stockStatus == ProductStockStatus.OUT_OF_STOCK -> CoralPink.copy(alpha = 0.5f)
+        stockStatus == ProductStockStatus.LOW_STOCK -> AmberOrange.copy(alpha = 0.5f)
+        else -> Slate700
     }
 
     Card(
@@ -1003,8 +1003,8 @@ fun CosmeticsProductCard(
                 Surface(
                     onClick = onRestock,
                     shape = RoundedCornerShape(8.dp),
-                    color = EmeraldPrimary.copy(alpha = 0.15f),
-                    border = BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.35f)),
+                    color = EmeraldPrimary.copy(alpha = 0.16f),
+                    border = BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.5f)),
                     modifier = Modifier.weight(1f).height(34.dp).testTag("btn_card_restock_${product.id}")
                 ) {
                     Row(
@@ -1023,7 +1023,7 @@ fun CosmeticsProductCard(
                     onClick = onAdjust,
                     shape = RoundedCornerShape(8.dp),
                     color = Slate800,
-                    border = BorderStroke(1.dp, Slate700),
+                    border = BorderStroke(1.dp, Slate600),
                     modifier = Modifier.weight(1f).height(34.dp).testTag("btn_card_adjust_${product.id}")
                 ) {
                     Row(
@@ -1031,9 +1031,9 @@ fun CosmeticsProductCard(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Tune, contentDescription = null, tint = Slate300, modifier = Modifier.size(13.dp))
+                        Icon(Icons.Default.Tune, contentDescription = null, tint = Slate200, modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("অ্যাডজাস্ট", fontSize = 11.sp, color = Slate300)
+                        Text("অ্যাডজাস্ট", fontSize = 11.sp, color = Slate200)
                     }
                 }
 
@@ -1042,11 +1042,11 @@ fun CosmeticsProductCard(
                     onClick = onBarcode,
                     shape = RoundedCornerShape(8.dp),
                     color = Slate800,
-                    border = BorderStroke(1.dp, Slate700),
+                    border = BorderStroke(1.dp, Slate600),
                     modifier = Modifier.size(34.dp).testTag("btn_card_barcode_${product.id}")
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.QrCode, contentDescription = "Barcode", tint = Slate300, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.QrCode, contentDescription = "Barcode", tint = Slate200, modifier = Modifier.size(15.dp))
                     }
                 }
 
@@ -1055,11 +1055,11 @@ fun CosmeticsProductCard(
                     onClick = onEdit,
                     shape = RoundedCornerShape(8.dp),
                     color = Slate800,
-                    border = BorderStroke(1.dp, Slate700),
+                    border = BorderStroke(1.dp, Slate600),
                     modifier = Modifier.size(34.dp).testTag("btn_card_edit_${product.id}")
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Slate300, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Slate200, modifier = Modifier.size(14.dp))
                     }
                 }
 
@@ -1067,8 +1067,8 @@ fun CosmeticsProductCard(
                 Surface(
                     onClick = onDelete,
                     shape = RoundedCornerShape(8.dp),
-                    color = CoralPink.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, CoralPink.copy(alpha = 0.35f)),
+                    color = CoralPink.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, CoralPink.copy(alpha = 0.5f)),
                     modifier = Modifier.size(34.dp).testTag("btn_card_delete_${product.id}")
                 ) {
                     Box(contentAlignment = Alignment.Center) {

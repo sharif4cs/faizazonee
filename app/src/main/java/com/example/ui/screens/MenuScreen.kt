@@ -70,6 +70,7 @@ import com.example.ui.theme.AmberOrange
 import com.example.ui.theme.CoralPink
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.Slate400
+import com.example.ui.theme.Slate700
 import com.example.ui.theme.Slate800
 import com.example.ui.theme.Slate850
 import com.example.ui.theme.Slate900
@@ -317,7 +318,7 @@ fun MenuScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, Slate800, RoundedCornerShape(14.dp))
+                        .border(1.dp, Slate700, RoundedCornerShape(14.dp))
                         .clickable { onOpenShopInfo() }
                         .testTag("menu_shop_profile_card"),
                     shape = RoundedCornerShape(14.dp),
@@ -383,7 +384,7 @@ fun MenuScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, Slate800, RoundedCornerShape(14.dp))
+                        .border(1.dp, Slate700, RoundedCornerShape(14.dp))
                         .testTag("menu_cloud_sync_card"),
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = Slate900)
@@ -645,7 +646,7 @@ fun MenuItemRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Slate800, RoundedCornerShape(12.dp))
+            .border(1.dp, Slate700, RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .testTag(testTag),
         shape = RoundedCornerShape(12.dp),

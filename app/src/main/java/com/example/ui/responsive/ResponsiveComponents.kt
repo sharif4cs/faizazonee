@@ -58,6 +58,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.Slate400
 import com.example.ui.theme.Slate600
+import com.example.ui.theme.Slate700
 import com.example.ui.theme.Slate800
 import com.example.ui.theme.Slate850
 import com.example.ui.theme.Slate900
@@ -155,7 +156,7 @@ fun ResponsiveCard(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(14.dp),
     colors: CardColors = CardDefaults.cardColors(containerColor = Slate900),
-    border: BorderStroke? = BorderStroke(1.dp, Slate800),
+    border: BorderStroke? = BorderStroke(1.dp, Slate700),
     elevation: CardElevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -226,7 +227,7 @@ fun ResponsiveSearchBar(
                 focusedContainerColor = Slate900,
                 unfocusedContainerColor = Slate900,
                 focusedBorderColor = EmeraldPrimary,
-                unfocusedBorderColor = Slate800,
+                unfocusedBorderColor = Slate700,
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary
             ),
@@ -271,7 +272,7 @@ fun ResponsiveDialog(
     title: String,
     subtitle: String? = null,
     modifier: Modifier = Modifier,
-    maxWidth: Dp = 640.dp,
+    maxContentWidth: Dp = 640.dp,
     dismissible: Boolean = true,
     confirmButton: (@Composable () -> Unit)? = null,
     dismissButton: (@Composable () -> Unit)? = null,
@@ -293,17 +294,17 @@ fun ResponsiveDialog(
                 .imePadding(),
             contentAlignment = Alignment.Center
         ) {
-            val screenWidth = maxWidth
-            val dialogTargetWidth = if (screenWidth < 600.dp) screenWidth else minOf(screenWidth * 0.9f, 680.dp)
+            val availableWidth = maxWidth
+            val dialogTargetWidth = if (availableWidth < maxContentWidth) availableWidth else maxContentWidth
 
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Slate900),
                 modifier = modifier
-                    .width(dialogTargetWidth)
-                    .widthIn(max = 680.dp)
+                    .fillMaxWidth()
+                    .widthIn(max = dialogTargetWidth)
                     .heightIn(max = maxHeight * 0.92f)
-                    .border(1.dp, Slate800, RoundedCornerShape(16.dp))
+                    .border(1.dp, Slate700, RoundedCornerShape(16.dp))
                     .testTag(testTag)
             ) {
                 Column(

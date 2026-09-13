@@ -48,8 +48,10 @@ import com.example.ui.theme.AmberOrange
 import com.example.ui.theme.CoralPink
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.RoyalBlue
+import com.example.ui.theme.Slate300
 import com.example.ui.theme.Slate400
 import com.example.ui.theme.Slate600
+import com.example.ui.theme.Slate700
 import com.example.ui.theme.Slate800
 import com.example.ui.theme.Slate850
 import com.example.ui.theme.Slate900
@@ -167,7 +169,7 @@ fun CustomerLedgerScreen(
                     focusedContainerColor = Slate900,
                     unfocusedContainerColor = Slate900,
                     focusedBorderColor = EmeraldPrimary,
-                    unfocusedBorderColor = Slate800,
+                    unfocusedBorderColor = Slate700,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary
                 ),
@@ -291,7 +293,7 @@ fun FilterTabChip(
             .background(if (isSelected) EmeraldPrimary else Slate900)
             .border(
                 1.dp,
-                if (isSelected) EmeraldPrimary else Slate800,
+                if (isSelected) EmeraldPrimary else Slate700,
                 RoundedCornerShape(20.dp)
             )
             .clickable(onClick = onClick)
@@ -303,7 +305,7 @@ fun FilterTabChip(
             text = label,
             fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color.White else Slate400
+            color = if (isSelected) Slate950 else Slate300
         )
     }
 }
@@ -321,12 +323,18 @@ fun CustomerLedgerCard(
         else -> AmberOrange
     }
 
+    val cardBorder = if (customer.currentDue > 0) {
+        CoralPink.copy(alpha = 0.4f)
+    } else {
+        Slate700
+    }
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Slate900),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Slate800, RoundedCornerShape(12.dp))
+            .border(1.dp, cardBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .testTag("customer_card_${customer.id}")
     ) {

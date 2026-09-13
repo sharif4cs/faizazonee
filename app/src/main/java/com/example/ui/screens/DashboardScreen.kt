@@ -69,6 +69,7 @@ import com.example.ui.theme.AmberOrange
 import com.example.ui.theme.CoralPink
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.Slate400
+import com.example.ui.theme.Slate700
 import com.example.ui.theme.Slate800
 import com.example.ui.theme.Slate850
 import com.example.ui.theme.Slate900
@@ -248,7 +249,7 @@ fun DashboardScreen(
                         .size(34.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Slate900)
-                        .border(1.dp, Slate800, RoundedCornerShape(8.dp))
+                        .border(1.dp, Slate700, RoundedCornerShape(8.dp))
                         .clickable { onLockApp() }
                         .testTag("button_dashboard_lock"),
                     contentAlignment = Alignment.Center
@@ -517,7 +518,7 @@ fun DashboardScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, Slate800, RoundedCornerShape(14.dp))
+                        .border(1.dp, Slate700, RoundedCornerShape(14.dp))
                         .clickable { onOpenOpeningCash() }
                         .testTag("banner_current_cash"),
                     shape = RoundedCornerShape(14.dp),
@@ -923,7 +924,7 @@ fun StatCard(
 ) {
     Card(
         modifier = modifier
-            .border(1.dp, Slate800, RoundedCornerShape(14.dp))
+            .border(1.dp, Slate700, RoundedCornerShape(14.dp))
             .testTag(testTag),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Slate900)
@@ -979,7 +980,7 @@ fun QuickActionButton(
 ) {
     Card(
         modifier = modifier
-            .border(1.dp, Slate800, RoundedCornerShape(12.dp))
+            .border(1.dp, Slate700, RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .testTag(testTag),
         shape = RoundedCornerShape(12.dp),
@@ -996,7 +997,8 @@ fun QuickActionButton(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(iconColor.copy(alpha = 0.15f)),
+                    .background(iconColor.copy(alpha = 0.18f))
+                    .border(1.dp, iconColor.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
