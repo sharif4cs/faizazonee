@@ -17,5 +17,14 @@ data class Sale(
     val dueAmount: Double = 0.0,
     val paymentType: String, // "CASH", "DUE"
     val timestamp: Long = System.currentTimeMillis(),
-    val dateString: String // e.g. "07 Sep 2026"
+    val dateString: String, // e.g. "07 Sep 2026"
+
+    // Cloud Sync Fields
+    val syncId: String = java.util.UUID.randomUUID().toString(),
+    val customerSyncId: String = "",
+    val shopId: String = "",
+    val createdAt: Long = timestamp,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false,
+    val syncStatus: String = "PENDING"
 )

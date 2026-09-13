@@ -10,10 +10,14 @@ import com.example.data.model.Expense
 import com.example.data.model.Product
 import com.example.data.model.Sale
 import com.example.data.model.ShopProfile
+import com.example.data.model.StockTransaction
 import com.example.data.repository.SaleCartItem
 import com.example.data.repository.ShopRepository
 import com.example.security.AuthManager
 import com.example.security.AuthResult
+import com.example.security.FirebaseSyncAuth
+import com.example.sync.SyncManager
+import com.example.sync.SyncStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -58,10 +62,21 @@ enum class CustomerFilter {
 
 class ShopViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: ShopRepository
+    private val db = AppDatabase.getDatabase(application)
+    private val dao = db.shopDao()
+    val syncManager: SyncManager = SyncManager(application, dao)
+    val firebaseSyncAuth: FirebaseSyncAuth = FirebaseSyncAuth(application)
+    private val repository: ShopRepository = ShopRepository(dao, syncManager)
 
     private val prefs = application.getSharedPreferences("shop_app_prefs", android.content.Context.MODE_PRIVATE)
     private val authManager = AuthManager(application)
+
+    // Cloud Sync Status Flow
+    val syncStatus: StateFlow<SyncStatus> = syncManager.syncStatus
+
+    fun triggerManualSync() {
+        syncManager.triggerSync()
+    }
 
     // Authentication / Login State
     private val _isLoggedIn = MutableStateFlow(authManager.isUserLoggedIn())
@@ -73,6 +88,13 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
         val result = authManager.authenticateOnline(phone, pin)
         if (result is AuthResult.Success) {
             _isLoggedIn.value = true
+            // Authenticate with Firebase Authentication & launch multi-device Firestore sync
+            viewModelScope.launch {
+                val fbResult = firebaseSyncAuth.authenticateWithFirebase(phone, pin)
+                fbResult.onSuccess { shopId ->
+                    syncManager.startSyncForShop(shopId)
+                }
+            }
         }
         return result
     }
@@ -86,13 +108,13 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun logout() {
+        syncManager.stopSync()
+        firebaseSyncAuth.signOut()
         authManager.setLoggedIn(false)
         _isLoggedIn.value = false
     }
 
     init {
-        val db = AppDatabase.getDatabase(application)
-        repository = ShopRepository(db.shopDao())
         viewModelScope.launch {
             val stockSeeded = prefs.getBoolean("faiza_stock_seeded_v3", false)
             if (!stockSeeded) {
@@ -103,6 +125,21 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
                 defaultName = "ফাইজা স্টোর",
                 defaultOwner = "মোঃ শরিফ"
             )
+
+            // Auto-start sync if user is already logged in
+            if (authManager.isUserLoggedIn()) {
+                val cachedShopId = firebaseSyncAuth.currentShopId
+                if (cachedShopId.isNotBlank()) {
+                    syncManager.startSyncForShop(cachedShopId)
+                } else {
+                    val phone = authManager.getRegisteredPhone()
+                    val pin = authManager.getLastVerifiedPin()
+                    val fbResult = firebaseSyncAuth.authenticateWithFirebase(phone, pin)
+                    fbResult.onSuccess { shopId ->
+                        syncManager.startSyncForShop(shopId)
+                    }
+                }
+            }
         }
     }
 
@@ -159,6 +196,30 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
     val allTransactions = repository.allTransactions.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
     )
+
+    val allStockTransactions = repository.allStockTransactions.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+    )
+
+    private val _preventExpiredSale = MutableStateFlow(true)
+    val preventExpiredSale: StateFlow<Boolean> = _preventExpiredSale.asStateFlow()
+
+    fun setPreventExpiredSale(prevent: Boolean) {
+        _preventExpiredSale.value = prevent
+    }
+
+    private val _posErrorMessage = MutableStateFlow<String?>(null)
+    val posErrorMessage: StateFlow<String?> = _posErrorMessage.asStateFlow()
+
+    fun clearPosErrorMessage() {
+        _posErrorMessage.value = null
+    }
+
+    fun getStockTransactionsForProduct(productId: Long): StateFlow<List<StockTransaction>> {
+        return repository.getStockTransactionsForProduct(productId).stateIn(
+            viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+        )
+    }
 
     val shopProfile = repository.shopProfile.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), ShopProfile()
@@ -246,16 +307,29 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
         _posCategory.value = category
     }
 
-    fun addToCart(product: Product, variant: String = "M") {
+    fun addToCart(product: Product, variant: String = "Standard"): Boolean {
+        if (_preventExpiredSale.value && product.isExpired()) {
+            _posErrorMessage.value = "‘${product.name}’ মেয়াদ উত্তীর্ণ! বিক্রি করা নিষিদ্ধ।"
+            return false
+        }
+        if (product.stockQuantity <= 0) {
+            _posErrorMessage.value = "‘${product.name}’ স্টক শেষ (Out of stock)!"
+            return false
+        }
         val currentList = _cart.value.toMutableList()
         val index = currentList.indexOfFirst { it.product.id == product.id && it.variant == variant }
         if (index >= 0) {
             val existing = currentList[index]
+            if (existing.quantity + 1 > product.stockQuantity) {
+                _posErrorMessage.value = "মজুদ স্টকের চেয়ে বেশি কার্টে যোগ করা সম্ভব নয়!"
+                return false
+            }
             currentList[index] = existing.copy(quantity = existing.quantity + 1)
         } else {
             currentList.add(SaleCartItem(product = product, variant = variant, quantity = 1))
         }
         _cart.value = currentList
+        return true
     }
 
     fun updateCartItemQuantity(item: SaleCartItem, change: Int) {
@@ -460,6 +534,20 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
     fun setShowPurchaseDialog(show: Boolean) { _showPurchaseDialog.value = show }
     fun setShowShopInfoDialog(show: Boolean) { _showShopInfoDialog.value = show }
 
+    // Barcode generator helper
+    fun generateUniqueBarcode(): String {
+        val prefix = "890"
+        val time = System.currentTimeMillis().toString().takeLast(9)
+        val base = prefix + time
+        var sum = 0
+        for (i in 0 until 12) {
+            val digit = base[i] - '0'
+            sum += if (i % 2 == 0) digit else digit * 3
+        }
+        val checkDigit = (10 - (sum % 10)) % 10
+        return "$base$checkDigit"
+    }
+
     // Add operations
     fun addProduct(
         name: String,
@@ -468,27 +556,67 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
         buyPrice: Double,
         sellPrice: Double,
         stock: Int,
-        variants: String,
+        variants: String = "Standard",
         brand: String = "",
         lowStockLimit: Int = 5,
-        note: String = ""
+        note: String = "",
+        barcode: String = "",
+        unit: String = "পিস",
+        wholesalePrice: Double = 0.0,
+        discount: Double = 0.0,
+        taxRate: Double = 0.0,
+        openingStock: Int = stock,
+        supplierName: String = "",
+        supplierPhone: String = "",
+        supplierId: String = "",
+        batchNumber: String = "",
+        manufacturingDate: String = "",
+        expiryDate: String = ""
     ) {
         viewModelScope.launch {
-            repository.insertProduct(
-                Product(
-                    name = name,
-                    category = category.ifBlank { "Shirt" },
-                    sku = sku.ifBlank { "SKU-" + (System.currentTimeMillis() % 10000) },
-                    purchasePrice = buyPrice,
-                    sellingPrice = sellPrice,
-                    stockQuantity = stock,
-                    sizesOrVariants = variants.ifBlank { "স্ট্যান্ডার্ড" },
-                    brand = brand,
-                    lowStockThreshold = lowStockLimit,
-                    note = note,
-                    isLowStockAlert = stock <= lowStockLimit
-                )
+            val generatedSku = sku.ifBlank { "SKU-" + (System.currentTimeMillis() % 100000) }
+            val generatedBarcode = barcode.ifBlank { generateUniqueBarcode() }
+            val newProduct = Product(
+                name = name,
+                category = category.ifBlank { "মেকআপ (Makeup)" },
+                sku = generatedSku,
+                barcode = generatedBarcode,
+                purchasePrice = buyPrice,
+                sellingPrice = sellPrice,
+                stockQuantity = stock,
+                sizesOrVariants = variants.ifBlank { "Standard" },
+                brand = brand,
+                lowStockThreshold = lowStockLimit,
+                note = note,
+                isLowStockAlert = stock <= lowStockLimit,
+                unit = unit.ifBlank { "পিস" },
+                wholesalePrice = wholesalePrice,
+                discount = discount,
+                taxRate = taxRate,
+                openingStock = openingStock,
+                supplierName = supplierName,
+                supplierPhone = supplierPhone,
+                supplierId = supplierId,
+                batchNumber = batchNumber,
+                manufacturingDate = manufacturingDate,
+                expiryDate = expiryDate
             )
+            val newId = repository.insertProduct(newProduct)
+            if (stock > 0) {
+                val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
+                val dateString = dateFormat.format(Date())
+                repository.recordRestock(
+                    product = newProduct.copy(id = newId),
+                    quantity = stock,
+                    unitPrice = buyPrice,
+                    supplierName = supplierName,
+                    supplierPhone = supplierPhone,
+                    batchNumber = batchNumber,
+                    mfgDate = manufacturingDate,
+                    expiryDate = expiryDate,
+                    note = "প্রারম্ভিক স্টক (Initial Stock)"
+                )
+            }
             _showAddProductDialog.value = false
         }
     }
@@ -501,10 +629,21 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
         buy: Double,
         sell: Double,
         stock: Int,
-        variants: String,
-        brand: String,
-        lowStockLimit: Int,
-        note: String
+        variants: String = "Standard",
+        brand: String = "",
+        lowStockLimit: Int = 5,
+        note: String = "",
+        barcode: String = "",
+        unit: String = "পিস",
+        wholesalePrice: Double = 0.0,
+        discount: Double = 0.0,
+        taxRate: Double = 0.0,
+        supplierName: String = "",
+        supplierPhone: String = "",
+        supplierId: String = "",
+        batchNumber: String = "",
+        manufacturingDate: String = "",
+        expiryDate: String = ""
     ) {
         viewModelScope.launch {
             repository.updateProduct(
@@ -513,18 +652,100 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
                     name = name,
                     category = category,
                     sku = sku,
+                    barcode = barcode,
                     purchasePrice = buy,
                     sellingPrice = sell,
                     stockQuantity = stock,
-                    sizesOrVariants = variants.ifBlank { "স্ট্যান্ডার্ড" },
+                    sizesOrVariants = variants.ifBlank { "Standard" },
                     brand = brand,
                     lowStockThreshold = lowStockLimit,
                     note = note,
-                    isLowStockAlert = stock <= lowStockLimit
+                    isLowStockAlert = stock <= lowStockLimit,
+                    unit = unit.ifBlank { "পিস" },
+                    wholesalePrice = wholesalePrice,
+                    discount = discount,
+                    taxRate = taxRate,
+                    supplierName = supplierName,
+                    supplierPhone = supplierPhone,
+                    supplierId = supplierId,
+                    batchNumber = batchNumber,
+                    manufacturingDate = manufacturingDate,
+                    expiryDate = expiryDate
                 )
             )
             _editingProduct.value = null
             _showAddProductDialog.value = false
+        }
+    }
+
+    fun restockProduct(
+        product: Product,
+        quantity: Int,
+        unitPrice: Double,
+        supplierName: String = "",
+        supplierPhone: String = "",
+        batchNumber: String = "",
+        mfgDate: String = "",
+        expiryDate: String = "",
+        isCashPaid: Boolean = true,
+        note: String = ""
+    ) {
+        viewModelScope.launch {
+            repository.recordRestock(
+                product = product,
+                quantity = quantity,
+                unitPrice = unitPrice,
+                supplierName = supplierName,
+                supplierPhone = supplierPhone,
+                batchNumber = batchNumber,
+                mfgDate = mfgDate,
+                expiryDate = expiryDate,
+                note = note
+            )
+            val totalCost = quantity * (if (unitPrice > 0) unitPrice else product.purchasePrice)
+            if (isCashPaid && totalCost > 0) {
+                val now = Date()
+                val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(now)
+                repository.insertExpense(
+                    Expense(
+                        category = "পণ্য ক্রয় / স্টক ইন",
+                        amount = totalCost,
+                        paymentMethod = "নগদ ক্যাশ",
+                        note = "সাপ্লায়ার: $supplierName. $note".trim(),
+                        title = "রিস্টক: ${product.name} ($quantity ${product.unit})",
+                        dateString = dateStr,
+                        timestamp = now.time
+                    )
+                )
+            }
+        }
+    }
+
+    fun adjustProductStock(
+        product: Product,
+        adjustmentType: String,
+        quantity: Int,
+        reason: String,
+        note: String = ""
+    ) {
+        viewModelScope.launch {
+            repository.recordStockAdjustment(
+                product = product,
+                adjustmentType = adjustmentType,
+                quantity = quantity,
+                reason = reason,
+                note = note
+            )
+        }
+    }
+
+    fun bulkImportProducts(
+        products: List<Product>,
+        onResult: (success: Int, failed: Int) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = repository.bulkImportProducts(products)
+            onResult(result.first, result.second)
         }
     }
 
@@ -740,9 +961,20 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
             val updatedProduct = product.copy(
                 stockQuantity = product.stockQuantity + quantity,
                 purchasePrice = if (purchasePrice > 0) purchasePrice else product.purchasePrice,
-                sizesOrVariants = updatedSizesOrVariants
+                sizesOrVariants = updatedSizesOrVariants,
+                isLowStockAlert = (product.stockQuantity + quantity) <= product.lowStockThreshold
             )
             repository.updateProduct(updatedProduct)
+
+            val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
+            val dateString = dateFormat.format(Date())
+            repository.recordRestock(
+                product = product,
+                quantity = quantity,
+                unitPrice = purchasePrice,
+                supplierName = supplier,
+                note = note.ifBlank { "সাইজ/ভ্যারিয়েন্ট: $selectedSize" }
+            )
 
             // 3. If Cash Out from Register, record Expense
             val totalCost = quantity * purchasePrice

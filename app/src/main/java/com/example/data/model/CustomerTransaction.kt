@@ -12,5 +12,14 @@ data class CustomerTransaction(
     val amount: Double,
     val note: String = "",
     val dateString: String, // e.g. "06 Sep 2026"
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+
+    // Cloud Sync Fields
+    val syncId: String = java.util.UUID.randomUUID().toString(),
+    val customerSyncId: String = "",
+    val shopId: String = "",
+    val createdAt: Long = timestamp,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false,
+    val syncStatus: String = "PENDING"
 )

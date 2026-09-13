@@ -14,7 +14,15 @@ data class Expense(
     val note: String = "",
     val title: String = "",
     val dateString: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+
+    // Cloud Sync Fields
+    val syncId: String = java.util.UUID.randomUUID().toString(),
+    val shopId: String = "",
+    val createdAt: Long = timestamp,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false,
+    val syncStatus: String = "PENDING"
 ) {
     val displayCategory: String
         get() = if (category == "অন্যান্য" && customCategory.isNotBlank()) customCategory else category

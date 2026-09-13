@@ -92,6 +92,7 @@ fun CustomerLedgerScreen(
             .testTag("screen_customer_ledger")
     ) {
         val screenWidth = maxWidth
+        val isSmallMobile = screenWidth < 360.dp
         val isTablet = screenWidth >= 640.dp
         val isDesktop = screenWidth >= 960.dp
         val gridColumns = if (isDesktop) 3 else if (isTablet) 2 else 1
@@ -101,7 +102,7 @@ fun CustomerLedgerScreen(
                 .fillMaxSize()
                 .widthIn(max = 1200.dp)
                 .align(Alignment.TopCenter)
-                .padding(horizontal = if (isTablet) 20.dp else 14.dp)
+                .padding(horizontal = if (isTablet) 20.dp else if (isSmallMobile) 10.dp else 14.dp)
         ) {
             // Header
             Row(
@@ -111,16 +112,16 @@ fun CustomerLedgerScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "কাস্টমার ও বাকি খাতা",
-                        fontSize = if (isTablet) 22.sp else 20.sp,
+                        fontSize = if (isTablet) 22.sp else if (isSmallMobile) 17.sp else 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
                     Text(
                         text = "মোট $totalCount জন • $dueCount জনের বাকি আছে",
-                        fontSize = 12.sp,
+                        fontSize = if (isSmallMobile) 11.sp else 12.sp,
                         color = Slate400
                     )
                 }
@@ -128,7 +129,7 @@ fun CustomerLedgerScreen(
                 IconButton(
                     onClick = onOpenAddCustomer,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(if (isSmallMobile) 36.dp else 42.dp)
                         .background(EmeraldPrimary, CircleShape)
                         .testTag("button_add_customer_icon")
                 ) {
@@ -136,7 +137,7 @@ fun CustomerLedgerScreen(
                         Icons.Default.Add,
                         contentDescription = "Add Customer",
                         tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(if (isSmallMobile) 20.dp else 24.dp)
                     )
                 }
             }

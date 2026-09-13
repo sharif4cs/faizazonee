@@ -134,6 +134,7 @@ class AuthManager(private val context: Context) {
                 .putInt(KEY_FAILED_ATTEMPTS, 0)
                 .putLong(KEY_LOCKOUT_UNTIL, 0L)
                 .putBoolean(KEY_SESSION_TOKEN, true)
+                .putString("last_verified_pin", inputPin.trim())
                 .apply()
             AuthResult.Success
         } else {
@@ -171,9 +172,12 @@ class AuthManager(private val context: Context) {
         }
         prefs.edit()
             .putString(KEY_PIN_HASH, hashPin(newPin.trim()))
+            .putString("last_verified_pin", newPin.trim())
             .apply()
         return true
     }
+
+    fun getLastVerifiedPin(): String = prefs.getString("last_verified_pin", DEFAULT_REAL_PIN) ?: DEFAULT_REAL_PIN
 
     private fun normalizePhone(phone: String): String {
         return phone.replace(" ", "")

@@ -58,10 +58,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Customer
 import com.example.data.model.Expense
+import com.example.data.model.ExpiryStatus
 import com.example.data.model.Product
 import com.example.data.model.Sale
 import com.example.data.model.ShopProfile
+import com.example.sync.SyncStatus
 import com.example.ui.ScreenTab
+import com.example.ui.components.CloudSyncBadge
 import com.example.ui.theme.AmberOrange
 import com.example.ui.theme.CoralPink
 import com.example.ui.theme.EmeraldPrimary
@@ -91,6 +94,8 @@ fun DashboardScreen(
     onOpenReports: () -> Unit,
     onOpenExpenseHistory: () -> Unit = {},
     onLockApp: () -> Unit = {},
+    syncStatus: SyncStatus = SyncStatus(),
+    onSyncClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var dateFilter by remember { mutableStateOf("আজ") }
@@ -117,13 +122,19 @@ fun DashboardScreen(
     val currentCash = shopProfile.openingCash
     val lowStockCount = products.count { it.stockQuantity <= it.lowStockThreshold || it.isLowStockAlert || it.stockQuantity <= 10 }
 
+    val totalStockValue = remember(products) {
+        products.sumOf { it.purchasePrice * it.stockQuantity }
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Slate950)
     ) {
         val screenWidth = maxWidth
+        val isSmallMobile = screenWidth < 360.dp
         val isTablet = screenWidth >= 640.dp
+        val isDesktop = screenWidth >= 960.dp
 
         Column(
             modifier = Modifier
@@ -179,6 +190,14 @@ fun DashboardScreen(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Cloud Sync Status Badge
+                CloudSyncBadge(
+                    syncStatus = syncStatus,
+                    onSyncClick = onSyncClick
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
                 // Date Filter Dropdown
                 Box {
                     Row(
@@ -251,58 +270,10 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            // Stat Cards Grid
+            // Responsive Stat Cards Grid
             item {
-                if (isTablet) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "$dateFilter মোট বিক্রি",
-                            amount = "৳ %,.0f".format(totalSalesAmount),
-                            subtitle = "${sales.size} টি বিক্রি সম্পন্ন",
-                            gradientColors = listOf(Color(0xFF047857), Color(0xFF065F46)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onOpenReports() },
-                            testTag = "stat_sales"
-                        )
-
-                        StatCard(
-                            title = "$dateFilter মোট খরচ",
-                            amount = "৳ %,.0f".format(totalExpensesAmount),
-                            subtitle = "${expenses.size} টি এন্ট্রি • তালিকা দেখুন",
-                            gradientColors = listOf(Color(0xFFBE123C), Color(0xFF9F1239)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onOpenExpenseHistory() },
-                            testTag = "stat_expenses"
-                        )
-
-                        StatCard(
-                            title = "নেট লাভ / ক্ষতি",
-                            amount = "৳ %,.0f".format(netProfit),
-                            subtitle = if (netProfit >= 0.0) "মোট মুনাফা" else "লোকসান",
-                            gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onOpenReports() },
-                            testTag = "stat_profit"
-                        )
-
-                        StatCard(
-                            title = "মোট বাকি খাতা",
-                            amount = "৳ %,.0f".format(totalCustomerDue),
-                            subtitle = "$dueCustomersCount জন বাকিদার",
-                            gradientColors = listOf(Color(0xFFB45309), Color(0xFF92400E)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onNavigateTab(ScreenTab.BAKI) },
-                            testTag = "stat_due"
-                        )
-                    }
-                } else {
+                if (isDesktop) {
+                    // Desktop: 6 cards in 2 rows of 3 columns
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -313,21 +284,184 @@ fun DashboardScreen(
                                 amount = "৳ %,.0f".format(totalSalesAmount),
                                 subtitle = "${sales.size} টি বিক্রি সম্পন্ন",
                                 gradientColors = listOf(Color(0xFF047857), Color(0xFF065F46)),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onOpenReports() },
+                                modifier = Modifier.weight(1f).clickable { onOpenReports() },
                                 testTag = "stat_sales"
                             )
-
+                            StatCard(
+                                title = "নেট লাভ / ক্ষতি",
+                                amount = "৳ %,.0f".format(netProfit),
+                                subtitle = if (netProfit >= 0.0) "মোট মুনাফা" else "লোকসান",
+                                gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
+                                modifier = Modifier.weight(1f).clickable { onOpenReports() },
+                                testTag = "stat_profit"
+                            )
                             StatCard(
                                 title = "$dateFilter মোট খরচ",
                                 amount = "৳ %,.0f".format(totalExpensesAmount),
-                                subtitle = "${expenses.size} টি এন্ট্রি • তালিকা দেখুন",
+                                subtitle = "${expenses.size} টি এন্ট্রি",
                                 gradientColors = listOf(Color(0xFFBE123C), Color(0xFF9F1239)),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onOpenExpenseHistory() },
+                                modifier = Modifier.weight(1f).clickable { onOpenExpenseHistory() },
                                 testTag = "stat_expenses"
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            StatCard(
+                                title = "মোট বাকি খাতা",
+                                amount = "৳ %,.0f".format(totalCustomerDue),
+                                subtitle = "$dueCustomersCount জন বাকিদার",
+                                gradientColors = listOf(Color(0xFFB45309), Color(0xFF92400E)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.BAKI) },
+                                testTag = "stat_due"
+                            )
+                            StatCard(
+                                title = "মোট স্টক মূল্য",
+                                amount = "৳ %,.0f".format(totalStockValue),
+                                subtitle = "${products.size} টি পণ্য",
+                                gradientColors = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.STOCK) },
+                                testTag = "stat_stock_value"
+                            )
+                            StatCard(
+                                title = "কম স্টক সতর্কতা",
+                                amount = "$lowStockCount টি পণ্য",
+                                subtitle = if (lowStockCount > 0) "রি-অর্ডার প্রয়োজন" else "পর্যাপ্ত স্টক",
+                                gradientColors = if (lowStockCount > 0) listOf(Color(0xFFDC2626), Color(0xFF991B1B)) else listOf(Color(0xFF047857), Color(0xFF065F46)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.STOCK) },
+                                testTag = "stat_low_stock"
+                            )
+                        }
+                    }
+                } else if (isTablet) {
+                    // Tablet: 2 rows of 3 columns
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            StatCard(
+                                title = "$dateFilter মোট বিক্রি",
+                                amount = "৳ %,.0f".format(totalSalesAmount),
+                                subtitle = "${sales.size} টি বিক্রি",
+                                gradientColors = listOf(Color(0xFF047857), Color(0xFF065F46)),
+                                modifier = Modifier.weight(1f).clickable { onOpenReports() },
+                                testTag = "stat_sales"
+                            )
+                            StatCard(
+                                title = "নেট লাভ / ক্ষতি",
+                                amount = "৳ %,.0f".format(netProfit),
+                                subtitle = if (netProfit >= 0.0) "মোট মুনাফা" else "লোকসান",
+                                gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
+                                modifier = Modifier.weight(1f).clickable { onOpenReports() },
+                                testTag = "stat_profit"
+                            )
+                            StatCard(
+                                title = "$dateFilter মোট খরচ",
+                                amount = "৳ %,.0f".format(totalExpensesAmount),
+                                subtitle = "${expenses.size} টি খরচ",
+                                gradientColors = listOf(Color(0xFFBE123C), Color(0xFF9F1239)),
+                                modifier = Modifier.weight(1f).clickable { onOpenExpenseHistory() },
+                                testTag = "stat_expenses"
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            StatCard(
+                                title = "মোট বাকি খাতা",
+                                amount = "৳ %,.0f".format(totalCustomerDue),
+                                subtitle = "$dueCustomersCount জন বাকিদার",
+                                gradientColors = listOf(Color(0xFFB45309), Color(0xFF92400E)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.BAKI) },
+                                testTag = "stat_due"
+                            )
+                            StatCard(
+                                title = "মোট স্টক মূল্য",
+                                amount = "৳ %,.0f".format(totalStockValue),
+                                subtitle = "${products.size} টি পণ্য",
+                                gradientColors = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.STOCK) },
+                                testTag = "stat_stock_value"
+                            )
+                            StatCard(
+                                title = "কম স্টক",
+                                amount = "$lowStockCount টি পণ্য",
+                                subtitle = if (lowStockCount > 0) "রি-অর্ডার করুন" else "পর্যাপ্ত",
+                                gradientColors = if (lowStockCount > 0) listOf(Color(0xFFDC2626), Color(0xFF991B1B)) else listOf(Color(0xFF047857), Color(0xFF065F46)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.STOCK) },
+                                testTag = "stat_low_stock"
+                            )
+                        }
+                    }
+                } else if (isSmallMobile) {
+                    // Small Mobile (<360dp): Clean 1-column list so text never overflows
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatCard(
+                            title = "$dateFilter মোট বিক্রি",
+                            amount = "৳ %,.0f".format(totalSalesAmount),
+                            subtitle = "${sales.size} টি বিক্রি সম্পন্ন",
+                            gradientColors = listOf(Color(0xFF047857), Color(0xFF065F46)),
+                            modifier = Modifier.fillMaxWidth().clickable { onOpenReports() },
+                            testTag = "stat_sales"
+                        )
+                        StatCard(
+                            title = "নেট লাভ / ক্ষতি",
+                            amount = "৳ %,.0f".format(netProfit),
+                            subtitle = if (netProfit >= 0.0) "মোট মুনাফা" else "লোকসান",
+                            gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
+                            modifier = Modifier.fillMaxWidth().clickable { onOpenReports() },
+                            testTag = "stat_profit"
+                        )
+                        StatCard(
+                            title = "$dateFilter মোট খরচ",
+                            amount = "৳ %,.0f".format(totalExpensesAmount),
+                            subtitle = "${expenses.size} টি এন্ট্রি",
+                            gradientColors = listOf(Color(0xFFBE123C), Color(0xFF9F1239)),
+                            modifier = Modifier.fillMaxWidth().clickable { onOpenExpenseHistory() },
+                            testTag = "stat_expenses"
+                        )
+                        StatCard(
+                            title = "মোট বাকি খাতা",
+                            amount = "৳ %,.0f".format(totalCustomerDue),
+                            subtitle = "$dueCustomersCount জন বাকিদার",
+                            gradientColors = listOf(Color(0xFFB45309), Color(0xFF92400E)),
+                            modifier = Modifier.fillMaxWidth().clickable { onNavigateTab(ScreenTab.BAKI) },
+                            testTag = "stat_due"
+                        )
+                        StatCard(
+                            title = "মোট স্টক মূল্য",
+                            amount = "৳ %,.0f".format(totalStockValue),
+                            subtitle = "${products.size} টি পণ্য",
+                            gradientColors = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
+                            modifier = Modifier.fillMaxWidth().clickable { onNavigateTab(ScreenTab.STOCK) },
+                            testTag = "stat_stock_value"
+                        )
+                    }
+                } else {
+                    // Normal Mobile (360-640dp): 2 columns (3 rows)
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            StatCard(
+                                title = "$dateFilter মোট বিক্রি",
+                                amount = "৳ %,.0f".format(totalSalesAmount),
+                                subtitle = "${sales.size} টি বিক্রি",
+                                gradientColors = listOf(Color(0xFF047857), Color(0xFF065F46)),
+                                modifier = Modifier.weight(1f).clickable { onOpenReports() },
+                                testTag = "stat_sales"
+                            )
+                            StatCard(
+                                title = "নেট লাভ",
+                                amount = "৳ %,.0f".format(netProfit),
+                                subtitle = if (netProfit >= 0.0) "মোট মুনাফা" else "লোকসান",
+                                gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
+                                modifier = Modifier.weight(1f).clickable { onOpenReports() },
+                                testTag = "stat_profit"
                             )
                         }
 
@@ -336,25 +470,42 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             StatCard(
-                                title = "নেট লাভ / ক্ষতি",
-                                amount = "৳ %,.0f".format(netProfit),
-                                subtitle = if (netProfit >= 0.0) "মোট মুনাফা" else "লোকসান",
-                                gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onOpenReports() },
-                                testTag = "stat_profit"
+                                title = "$dateFilter মোট খরচ",
+                                amount = "৳ %,.0f".format(totalExpensesAmount),
+                                subtitle = "${expenses.size} টি খরচ",
+                                gradientColors = listOf(Color(0xFFBE123C), Color(0xFF9F1239)),
+                                modifier = Modifier.weight(1f).clickable { onOpenExpenseHistory() },
+                                testTag = "stat_expenses"
                             )
-
                             StatCard(
                                 title = "মোট বাকি খাতা",
                                 amount = "৳ %,.0f".format(totalCustomerDue),
                                 subtitle = "$dueCustomersCount জন বাকিদার",
                                 gradientColors = listOf(Color(0xFFB45309), Color(0xFF92400E)),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onNavigateTab(ScreenTab.BAKI) },
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.BAKI) },
                                 testTag = "stat_due"
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            StatCard(
+                                title = "মোট স্টক মূল্য",
+                                amount = "৳ %,.0f".format(totalStockValue),
+                                subtitle = "${products.size} টি পণ্য",
+                                gradientColors = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.STOCK) },
+                                testTag = "stat_stock_value"
+                            )
+                            StatCard(
+                                title = "কম স্টক",
+                                amount = "$lowStockCount টি পণ্য",
+                                subtitle = if (lowStockCount > 0) "রি-অর্ডার সতর্কতা" else "পর্যাপ্ত স্টক",
+                                gradientColors = if (lowStockCount > 0) listOf(Color(0xFFDC2626), Color(0xFF991B1B)) else listOf(Color(0xFF047857), Color(0xFF065F46)),
+                                modifier = Modifier.weight(1f).clickable { onNavigateTab(ScreenTab.STOCK) },
+                                testTag = "stat_low_stock"
                             )
                         }
                     }
@@ -483,6 +634,71 @@ fun DashboardScreen(
                 }
             }
 
+            val expiredCount = products.count { it.isExpired() }
+            val expiringSoonCount = products.count { it.getExpiryStatus() == ExpiryStatus.EXPIRING_SOON }
+            if (expiredCount > 0 || expiringSoonCount > 0) {
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, CoralPink.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                            .clickable { onNavigateTab(ScreenTab.STOCK) }
+                            .testTag("banner_expiry_alert"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = CoralPink.copy(alpha = 0.12f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(CoralPink.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.WarningAmber,
+                                        contentDescription = null,
+                                        tint = CoralPink,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (expiredCount > 0) "মেয়াদ উত্তীর্ণ কসমেটিক্স: $expiredCount টি" else "মেয়াদ সন্নিকটে: $expiringSoonCount টি পণ্য",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                    Text(
+                                        text = "স্টক অপশন থেকে মেয়াদোত্তীর্ণ পণ্য চেক করুন",
+                                        fontSize = 11.sp,
+                                        color = Slate400
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = "চেক করুন >",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = CoralPink
+                            )
+                        }
+                    }
+                }
+            }
+
             // Quick Actions Section
             item {
                 Spacer(modifier = Modifier.height(4.dp))
@@ -555,6 +771,73 @@ fun DashboardScreen(
                             testTag = "btn_quick_purchase",
                             onClick = onOpenPurchaseStock
                         )
+                    }
+                } else if (isSmallMobile) {
+                    // Small Mobile: 3 rows of 2 columns
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            QuickActionButton(
+                                icon = Icons.Default.PointOfSale,
+                                label = "নতুন বিক্রি",
+                                iconColor = EmeraldPrimary,
+                                modifier = Modifier.weight(1f),
+                                testTag = "btn_quick_pos",
+                                onClick = { onNavigateTab(ScreenTab.POS) }
+                            )
+                            QuickActionButton(
+                                icon = Icons.Default.ReceiptLong,
+                                label = "খরচ এন্ট্রি",
+                                iconColor = CoralPink,
+                                modifier = Modifier.weight(1f),
+                                testTag = "btn_quick_add_expense",
+                                onClick = onOpenAddExpense
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            QuickActionButton(
+                                icon = Icons.Default.HistoryEdu,
+                                label = "খরচের হিসাব",
+                                iconColor = AmberOrange,
+                                modifier = Modifier.weight(1f),
+                                testTag = "btn_quick_expense_history",
+                                onClick = onOpenExpenseHistory
+                            )
+                            QuickActionButton(
+                                icon = Icons.Default.Payments,
+                                label = "বাকি আদায়",
+                                iconColor = EmeraldPrimary,
+                                modifier = Modifier.weight(1f),
+                                testTag = "btn_quick_collect_due",
+                                onClick = onOpenCollectDue
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            QuickActionButton(
+                                icon = Icons.Default.AddBox,
+                                label = "নতুন পণ্য",
+                                iconColor = EmeraldPrimary,
+                                modifier = Modifier.weight(1f),
+                                testTag = "btn_quick_add_product",
+                                onClick = onOpenAddProduct
+                            )
+                            QuickActionButton(
+                                icon = Icons.Default.ShoppingBag,
+                                label = "মাল কেনা",
+                                iconColor = AmberOrange,
+                                modifier = Modifier.weight(1f),
+                                testTag = "btn_quick_purchase",
+                                onClick = onOpenPurchaseStock
+                            )
+                        }
                     }
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

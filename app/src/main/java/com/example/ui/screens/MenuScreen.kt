@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -61,11 +62,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ShopProfile
+import com.example.sync.SyncState
+import com.example.sync.SyncStatus
 import com.example.ui.ScreenTab
+import com.example.ui.components.CloudSyncBadge
+import com.example.ui.theme.AmberOrange
 import com.example.ui.theme.CoralPink
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.Slate400
 import com.example.ui.theme.Slate800
+import com.example.ui.theme.Slate850
 import com.example.ui.theme.Slate900
 import com.example.ui.theme.Slate950
 import com.example.ui.theme.TextPrimary
@@ -79,6 +85,10 @@ fun MenuScreen(
     onResetDemoData: () -> Unit,
     onLogout: () -> Unit = {},
     onChangePin: (currentPin: String, newPin: String) -> Boolean = { _, _ -> true },
+    syncStatus: SyncStatus = SyncStatus(),
+    shopId: String = "",
+    userUid: String = "",
+    onTriggerSync: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -264,39 +274,44 @@ fun MenuScreen(
         )
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Slate950),
         contentAlignment = Alignment.TopCenter
     ) {
+        val screenWidth = maxWidth
+        val isTablet = screenWidth >= 600.dp
+        val isDesktop = screenWidth >= 960.dp
+        val horizontalPadding = if (isDesktop) 36.dp else if (isTablet) 24.dp else 16.dp
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 900.dp)
+                .widthIn(max = 840.dp)
         ) {
             // Top Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "মেনু ও সেটিংস",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-        }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = horizontalPadding, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "মেনু ও সেটিংস",
+                    fontSize = if (isTablet) 22.sp else 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(bottom = 32.dp)
-        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = horizontalPadding),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
             // Shop Profile Card
             item {
                 Card(
@@ -359,6 +374,127 @@ fun MenuScreen(
                             tint = Slate400,
                             modifier = Modifier.size(14.dp)
                         )
+                    }
+                }
+            }
+
+            // Cloud Sync & Multi-Device Backup Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Slate800, RoundedCornerShape(14.dp))
+                        .testTag("menu_cloud_sync_card"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Slate900)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF0284C7).copy(alpha = 0.15f))
+                                        .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.CloudDownload,
+                                        contentDescription = "Cloud",
+                                        tint = Color(0xFF38BDF8),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "ক্লাউড সিঙ্ক ও ব্যাকআপ",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                    Text(
+                                        text = "মাল্টি-ডিভাইস রিয়েলটাইম সিঙ্ক",
+                                        fontSize = 11.sp,
+                                        color = Slate400
+                                    )
+                                }
+                            }
+
+                            CloudSyncBadge(
+                                syncStatus = syncStatus,
+                                onSyncClick = onTriggerSync
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Business Shop ID Pill
+                        if (shopId.isNotBlank()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Slate850)
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "বিজনেস শপ আইডি:",
+                                    fontSize = 11.sp,
+                                    color = Slate400
+                                )
+                                Text(
+                                    text = shopId,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = EmeraldPrimary
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                        }
+
+                        if (syncStatus.lastSyncTime > 0) {
+                            val syncTimeStr = java.text.SimpleDateFormat("dd MMM, hh:mm a", java.util.Locale.US)
+                                .format(java.util.Date(syncStatus.lastSyncTime))
+                            Text(
+                                text = "সর্বশেষ সিঙ্ক: $syncTimeStr",
+                                fontSize = 11.sp,
+                                color = Slate400,
+                                modifier = Modifier.padding(horizontal = 2.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Button(
+                            onClick = onTriggerSync,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .testTag("button_trigger_sync_now"),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (syncStatus.state == SyncState.SYNCING) Slate800 else Color(0xFF0284C7)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = if (syncStatus.state == SyncState.SYNCING) "সিঙ্ক হচ্ছে..." else "এখনই সিঙ্ক করুন (Sync Now)",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }

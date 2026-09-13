@@ -73,8 +73,8 @@ fun ShopBottomNavigation(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
+                .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { item ->
@@ -88,7 +88,7 @@ fun ShopBottomNavigation(
                         .clickable {
                             onTabSelected(item.tab)
                         }
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (item.tab == ScreenTab.POS && cartItemCount > 0) {
@@ -100,7 +100,7 @@ fun ShopBottomNavigation(
                                 ) {
                                     Text(
                                         text = cartItemCount.toString(),
-                                        fontSize = 10.sp,
+                                        fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -110,7 +110,7 @@ fun ShopBottomNavigation(
                                 imageVector = item.icon,
                                 contentDescription = item.titleBangla,
                                 tint = tintColor,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     } else {
@@ -118,15 +118,16 @@ fun ShopBottomNavigation(
                             imageVector = item.icon,
                             contentDescription = item.titleBangla,
                             tint = tintColor,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     Text(
                         text = item.titleBangla,
-                        fontSize = 11.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = tintColor,
+                        maxLines = 1,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }

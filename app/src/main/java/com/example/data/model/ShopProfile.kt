@@ -17,5 +17,13 @@ data class ShopProfile(
     val openingBkash: Double = 0.0,
     val openingNagad: Double = 0.0,
     val openingBank: Double = 0.0,
-    val currencySymbol: String = "৳"
+    val currencySymbol: String = "৳",
+
+    // Cloud Sync Fields
+    val syncId: String = "profile_main",
+    val shopId: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false,
+    val syncStatus: String = "PENDING"
 )

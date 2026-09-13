@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +31,7 @@ import com.example.ui.ShopViewModel
 import com.example.ui.SubScreen
 import com.example.ui.components.AccountBalancesDialog
 import com.example.ui.components.AddCustomerDialog
+import com.example.ui.components.AddEditCosmeticsProductDialog
 import com.example.ui.components.AddExpenseDialog
 import com.example.ui.components.AddProductDialog
 import com.example.ui.components.CollectDueDialog
@@ -38,6 +41,22 @@ import com.example.ui.components.OpeningCashDialog
 import com.example.ui.components.PurchaseStockDialog
 import com.example.ui.components.ShopBottomNavigation
 import com.example.ui.components.ShopInfoDialog
+import com.example.ui.responsive.ResponsiveShopScaffold
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.example.ui.theme.CoralPink
+import com.example.ui.theme.EmeraldPrimary
+import com.example.ui.theme.Slate300
+import com.example.ui.theme.Slate900
+import com.example.ui.theme.TextPrimary
 import com.example.ui.screens.CartCheckoutScreen
 import com.example.ui.screens.CustomerDetailScreen
 import com.example.ui.screens.CustomerLedgerScreen
@@ -57,6 +76,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        try {
+            com.google.firebase.FirebaseApp.initializeApp(this)
+        } catch (_: Exception) {}
         enableEdgeToEdge()
 
         setContent {
@@ -115,6 +137,10 @@ fun ShopApp(viewModel: ShopViewModel) {
     val checkoutDiscount by viewModel.checkoutDiscount.collectAsStateWithLifecycle()
     val checkoutPaidAmount by viewModel.checkoutPaidAmount.collectAsStateWithLifecycle()
 
+    val stockTransactions by viewModel.allStockTransactions.collectAsStateWithLifecycle()
+    val posErrorMessage by viewModel.posErrorMessage.collectAsStateWithLifecycle()
+    val syncStatus by viewModel.syncStatus.collectAsStateWithLifecycle()
+
     // Dialog states
     val showAddProduct by viewModel.showAddProductDialog.collectAsStateWithLifecycle()
     val showAddCustomer by viewModel.showAddCustomerDialog.collectAsStateWithLifecycle()
@@ -134,24 +160,20 @@ fun ShopApp(viewModel: ShopViewModel) {
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Slate950,
-        contentWindowInsets = WindowInsets.statusBars,
-        bottomBar = {
-            if (activeSubScreen == SubScreen.NONE) {
-                ShopBottomNavigation(
-                    currentTab = currentTab,
-                    cartItemCount = cart.sumOf { it.quantity },
-                    onTabSelected = { tab -> viewModel.navigateToTab(tab) }
-                )
-            }
-        }
-    ) { innerPadding ->
+    ResponsiveShopScaffold(
+        shopProfile = currentShopProfile,
+        currentTab = currentTab,
+        activeSubScreen = activeSubScreen,
+        cartItemCount = cart.sumOf { it.quantity },
+        onTabSelected = { tab -> viewModel.navigateToTab(tab) },
+        onOpenReports = { viewModel.openReports() },
+        onOpenExpenses = { viewModel.openExpenseHistory() },
+        onLockApp = { viewModel.logout() },
+        onLogout = { viewModel.logout() }
+    ) { responsiveState ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(Slate950)
         ) {
             AnimatedContent(
@@ -244,7 +266,9 @@ fun ShopApp(viewModel: ShopViewModel) {
                                     onOpenOpeningCash = { viewModel.setShowOpeningCashDialog(true) },
                                     onOpenReports = { viewModel.openReports() },
                                     onOpenExpenseHistory = { viewModel.openExpenseHistory() },
-                                    onLockApp = { viewModel.logout() }
+                                    onLockApp = { viewModel.logout() },
+                                    syncStatus = syncStatus,
+                                    onSyncClick = { viewModel.triggerManualSync() }
                                 )
                             }
 
@@ -257,7 +281,24 @@ fun ShopApp(viewModel: ShopViewModel) {
                                     onSearchChange = { viewModel.setPosSearch(it) },
                                     onCategorySelect = { viewModel.setPosCategory(it) },
                                     onAddToCart = { product, variant -> viewModel.addToCart(product, variant) },
-                                    onOpenCart = { viewModel.openCartCheckout() }
+                                    onOpenCart = { viewModel.openCartCheckout() },
+                                    customerName = checkoutCustomerName,
+                                    customerPhone = checkoutCustomerPhone,
+                                    selectedCustomer = checkoutSelectedCustomer,
+                                    isCash = checkoutIsCash,
+                                    discount = checkoutDiscount,
+                                    paidAmountStr = checkoutPaidAmount,
+                                    allCustomers = customers,
+                                    onClearCart = { viewModel.clearCart() },
+                                    onUpdateQuantity = { item, change -> viewModel.updateCartItemQuantity(item, change) },
+                                    onRemoveCartItem = { item -> viewModel.removeCartItem(item) },
+                                    onCustomerNameChange = { viewModel.setCheckoutCustomerName(it) },
+                                    onCustomerPhoneChange = { viewModel.setCheckoutCustomerPhone(it) },
+                                    onSelectCustomer = { viewModel.setCheckoutSelectedCustomer(it) },
+                                    onIsCashChange = { viewModel.setCheckoutIsCash(it) },
+                                    onDiscountChange = { viewModel.setCheckoutDiscount(it) },
+                                    onPaidAmountChange = { viewModel.setCheckoutPaidAmount(it) },
+                                    onCompleteSale = { viewModel.completeCheckout() }
                                 )
                             }
 
@@ -270,7 +311,7 @@ fun ShopApp(viewModel: ShopViewModel) {
                                     onCategorySelect = { viewModel.setStockCategory(it) },
                                     onOpenAddProduct = { viewModel.openAddProduct() },
                                     onProductClick = { product ->
-                                        // Handled inside StockScreen with management dialog
+                                        // Handled inside StockScreen with management dialog & detail modal
                                     },
                                     onEditProduct = { product ->
                                         viewModel.openEditProduct(product)
@@ -280,7 +321,18 @@ fun ShopApp(viewModel: ShopViewModel) {
                                     },
                                     onUpdateStockQuantity = { product, newQuantity ->
                                         viewModel.updateProductStock(product, newQuantity)
-                                    }
+                                    },
+                                    stockTransactions = stockTransactions,
+                                    onRestock = { product, qty, buyPrice, sName, sPhone, batch, mfg, exp, isCash, note ->
+                                        viewModel.restockProduct(product, qty, buyPrice, sName, sPhone, batch, mfg, exp, isCash, note)
+                                    },
+                                    onAdjustStock = { product, type, qty, reason, note ->
+                                        viewModel.adjustProductStock(product, type, qty, reason, note)
+                                    },
+                                    onBulkImport = { importedList ->
+                                        viewModel.bulkImportProducts(importedList) { _, _ -> }
+                                    },
+                                    shopName = currentShopProfile.shopName.ifBlank { "কসমেটিক্স শপ" }
                                 )
                             }
 
@@ -306,7 +358,11 @@ fun ShopApp(viewModel: ShopViewModel) {
                                     onOpenReports = { viewModel.openReports() },
                                     onResetDemoData = { viewModel.resetDemoData() },
                                     onLogout = { viewModel.logout() },
-                                    onChangePin = { cur, new -> viewModel.updatePin(cur, new) }
+                                    onChangePin = { cur, new -> viewModel.updatePin(cur, new) },
+                                    syncStatus = syncStatus,
+                                    shopId = viewModel.firebaseSyncAuth.currentShopId,
+                                    userUid = viewModel.firebaseSyncAuth.currentUid,
+                                    onTriggerSync = { viewModel.triggerManualSync() }
                                 )
                             }
                         }
@@ -319,10 +375,10 @@ fun ShopApp(viewModel: ShopViewModel) {
     // Modal Dialogs
     if (showAddProduct || editingProduct != null) {
         val currentEditProduct = editingProduct
-        AddProductDialog(
+        AddEditCosmeticsProductDialog(
             editingProduct = currentEditProduct,
             onDismiss = { viewModel.closeProductDialog() },
-            onConfirm = { name, category, sku, buy, sell, stock, variants, brand, lowStockLimit, note ->
+            onConfirm = { name, category, sku, buy, sell, stock, variants, brand, lowLimit, note, barcode, unit, wholesale, discount, tax, openingStock, supplierName, supplierPhone, batch, mfg, exp ->
                 if (currentEditProduct != null) {
                     viewModel.updateProductDetails(
                         id = currentEditProduct.id,
@@ -334,11 +390,43 @@ fun ShopApp(viewModel: ShopViewModel) {
                         stock = stock,
                         variants = variants,
                         brand = brand,
-                        lowStockLimit = lowStockLimit,
-                        note = note
+                        lowStockLimit = lowLimit,
+                        note = note,
+                        barcode = barcode,
+                        unit = unit,
+                        wholesalePrice = wholesale,
+                        discount = discount,
+                        taxRate = tax,
+                        supplierName = supplierName,
+                        supplierPhone = supplierPhone,
+                        batchNumber = batch,
+                        manufacturingDate = mfg,
+                        expiryDate = exp
                     )
                 } else {
-                    viewModel.addProduct(name, category, sku, buy, sell, stock, variants, brand, lowStockLimit, note)
+                    viewModel.addProduct(
+                        name = name,
+                        category = category,
+                        sku = sku,
+                        buyPrice = buy,
+                        sellPrice = sell,
+                        stock = stock,
+                        variants = variants,
+                        brand = brand,
+                        lowStockLimit = lowLimit,
+                        note = note,
+                        barcode = barcode,
+                        unit = unit,
+                        wholesalePrice = wholesale,
+                        discount = discount,
+                        taxRate = tax,
+                        openingStock = openingStock,
+                        supplierName = supplierName,
+                        supplierPhone = supplierPhone,
+                        batchNumber = batch,
+                        manufacturingDate = mfg,
+                        expiryDate = exp
+                    )
                 }
             }
         )
@@ -431,6 +519,44 @@ fun ShopApp(viewModel: ShopViewModel) {
         CompletedSaleInvoiceDialog(
             summary = summary,
             onDismiss = { viewModel.dismissCompletedSale() }
+        )
+    }
+
+    posErrorMessage?.let { errMsg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPosErrorMessage() },
+            containerColor = Slate900,
+            icon = {
+                Icon(
+                    Icons.Default.ErrorOutline,
+                    contentDescription = null,
+                    tint = CoralPink,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "পণ্য বিক্রয় সতর্কতা",
+                    color = TextPrimary,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = errMsg,
+                    color = Slate300,
+                    fontSize = 13.5.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.clearPosErrorMessage() },
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                ) {
+                    Text("ঠিক আছে", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
         )
     }
 }

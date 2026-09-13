@@ -14,5 +14,12 @@ data class Customer(
     val totalPaid: Double = 0.0,
     val currentDue: Double = 0.0,
     val lastSaleDate: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+
+    // Cloud Sync Fields
+    val syncId: String = java.util.UUID.randomUUID().toString(),
+    val shopId: String = "",
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false,
+    val syncStatus: String = "PENDING"
 )

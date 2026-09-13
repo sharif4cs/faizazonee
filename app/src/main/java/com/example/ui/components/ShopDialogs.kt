@@ -954,11 +954,19 @@ fun AddCustomerDialog(
     var address by remember { mutableStateOf("") }
     var initialDue by remember { mutableStateOf("") }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Slate900),
-            modifier = Modifier.fillMaxWidth().testTag("dialog_add_customer")
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 520.dp)
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .imePadding()
+                .testTag("dialog_add_customer")
         ) {
             Column(
                 modifier = Modifier
@@ -2005,12 +2013,18 @@ fun AccountBalancesDialog(
         mutableStateOf(if (accountBalances.bank > 0) "%,.0f".format(accountBalances.bank).replace(",", "") else "")
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Slate900),
             modifier = Modifier
                 .fillMaxWidth()
+                .widthIn(max = 540.dp)
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .imePadding()
                 .border(1.dp, Slate800, RoundedCornerShape(16.dp))
                 .testTag("dialog_account_balances")
         ) {
@@ -2117,14 +2131,24 @@ fun CollectDueDialog(
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("বাকি আদায় (ক্যাশ)") }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Slate900),
-            modifier = Modifier.fillMaxWidth().testTag("dialog_collect_due")
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 520.dp)
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .imePadding()
+                .testTag("dialog_collect_due")
         ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2422,6 +2446,7 @@ fun PurchaseStockDialog(
                 .fillMaxWidth()
                 .widthIn(max = 620.dp)
                 .padding(horizontal = 12.dp, vertical = 16.dp)
+                .imePadding()
                 .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
                 .testTag("dialog_purchase_stock")
         ) {
@@ -2843,11 +2868,19 @@ fun ShopInfoDialog(
     var phone by remember { mutableStateOf(profile.phone) }
     var address by remember { mutableStateOf(profile.address) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Slate900),
-            modifier = Modifier.fillMaxWidth().testTag("dialog_shop_info")
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 540.dp)
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .imePadding()
+                .testTag("dialog_shop_info")
         ) {
             Column(
                 modifier = Modifier
@@ -2900,11 +2933,19 @@ fun CompletedSaleInvoiceDialog(
     summary: CompletedSaleSummary,
     onDismiss: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Slate900),
-            modifier = Modifier.fillMaxWidth().testTag("dialog_invoice_success")
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 520.dp)
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .imePadding()
+                .testTag("dialog_invoice_success")
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
